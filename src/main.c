@@ -6,13 +6,34 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define MAX_INPUT 1024
 #define MAX_ARGS 64
+
+typedef struct {
+    char *args[MAX_ARGS];
+    int count;
+} Command;
+
+void parse_command(char *line, Command *cmd)
+{
+    cmd->count = 0;
+
+    char *token = strtok(line, " \t");
+
+    while (token != NULL && cmd->count < MAX_ARGS - 1)
+    {
+        cmd->args[cmd->count] = token;
+        cmd->count++;
+        token = strtok(NULL, " \t");
+    }
+
+    cmd->args[cmd->count] = NULL;
+}
 
 int main(void)
 {
-    char input[MAX_INPUT];
-    char *args[MAX_ARGS];
+    char *line = NULL;
+    size_t len = 0;
+    Command cmd;
 
     printf("=================================\n");
     printf("       Welcome to SHELLFORGE\n");
@@ -23,53 +44,34 @@ int main(void)
         printf("shellforge$ ");
         fflush(stdout);
 
-        if (fgets(input, sizeof(input), stdin) == NULL)
+        if (getline(&line, &len, stdin) == -1)
         {
             printf("\n");
             break;
         }
 
-        input[strcspn(input, "\n")] = '\0';
+        line[strcspn(line, "\n")] = '\0';
 
-        if (input[0] == '\0')
+        parse_command(line, &cmd);
+
+        if (cmd.count == 0)
             continue;
 
-        int count = 0;
-        char *token = strtok(input, " \t");
-
-        while (token != NULL && count < MAX_ARGS - 1)
-        {
-            args[count++] = token;
-            token = strtok(NULL, " \t");
-        }
-
-        args[count] = NULL;
-
-        if (count == 0)
-            continue;
-
-        /* Display command and arguments */
-        printf("\nCommand and arguments:\n");
-
-        for (int i = 0; i < count; i++)
-        {
-            printf("arg[%d] - %s\n", i, args[i]);
-        }
-
-        printf("arg[%d] - NULL\n\n", count);
-
-        /* Built-in command: exit */
-        if (strcmp(args[0], "exit") == 0)
+        if (strcmp(cmd.args[0], "exit") == 0)
         {
             printf("Exiting SHELLFORGE. Goodbye!\n");
             break;
         }
 
+        /* Milestone 3: Display the organized command */
+        printf("Structure Log -> command: %s | Arguments found: %d\n",
+               cmd.args[0], cmd.count - 1);
+
         /* Built-in command: cd */
-        if (strcmp(args[0], "cd") == 0)
+        if (strcmp(cmd.args[0], "cd") == 0)
         {
             const char *path =
-                (count > 1) ? args[1] : getenv("HOME");
+                (cmd.count > 1) ? cmd.args[1] : getenv("HOME");
 
             if (path == NULL || chdir(path) != 0)
                 perror("cd");
@@ -86,7 +88,7 @@ int main(void)
         }
         else if (pid == 0)
         {
-            execvp(args[0], args);
+            execvp(cmd.args[0], cmd.args);
             perror("Command execution failed");
             _exit(127);
         }
@@ -97,6 +99,7 @@ int main(void)
         }
     }
 
+    free(line);
     return 0;
 }
 
