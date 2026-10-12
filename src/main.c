@@ -20,7 +20,7 @@ int main(void)
 
     while (1)
     {
-        printf("shellforge> ");
+        printf("shellforge$ ");
         fflush(stdout);
 
         if (fgets(input, sizeof(input), stdin) == NULL)
@@ -48,12 +48,24 @@ int main(void)
         if (count == 0)
             continue;
 
+        /* Display command and arguments */
+        printf("\nCommand and arguments:\n");
+
+        for (int i = 0; i < count; i++)
+        {
+            printf("arg[%d] - %s\n", i, args[i]);
+        }
+
+        printf("arg[%d] - NULL\n\n", count);
+
+        /* Built-in command: exit */
         if (strcmp(args[0], "exit") == 0)
         {
             printf("Exiting SHELLFORGE. Goodbye!\n");
             break;
         }
 
+        /* Built-in command: cd */
         if (strcmp(args[0], "cd") == 0)
         {
             const char *path =
@@ -65,6 +77,7 @@ int main(void)
             continue;
         }
 
+        /* Execute external commands */
         pid_t pid = fork();
 
         if (pid < 0)
@@ -86,3 +99,4 @@ int main(void)
 
     return 0;
 }
+
